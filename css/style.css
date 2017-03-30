@@ -1,0 +1,24 @@
+.map {
+	border: medium solid #999;
+}
+.countries {
+	fill: #FFF;
+	stroke: #CCC;
+	stroke-width: 2px;
+}
+/*If I change color here the entire map will be that color*/
+.regions{
+	fill: none;
+	stroke: black;
+}
+
+/*turning this black turns oceans black*/
+.gratBackground {
+	fill: #D5E3FF;
+}
+
+.gratLines {
+	fill: none;
+	stroke: #999;
+	stroke-width: 1px;
+}
