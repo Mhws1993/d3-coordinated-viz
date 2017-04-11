@@ -5,6 +5,22 @@
 var attrArray = ["povline", "Unemployment", "HighGraduation", "HigherEdAttain", "FoodInsecurity"]; //list of attributes
 var expressed = attrArray[0]; //initial attribute
 
+
+//chart frame dimensions
+var chartWidth = window.innerWidth * 0.425,
+    chartHeight = 473,
+    leftPadding = 25,
+    rightPadding = 2,
+    topBottomPadding = 5,
+    chartInnerWidth = chartWidth - leftPadding - rightPadding,
+    chartInnerHeight = chartHeight - topBottomPadding * 2,
+    translate = "translate(" + leftPadding + "," + topBottomPadding + ")";
+
+//create a scale to size bars proportionally to frame and for axis
+   var yScale = d3.scaleLinear()
+              .range([0, chartHeight])
+              .domain([0, 105]);
+//start of script
 window.onload = setMap();
 
 //set up choropleth map
@@ -50,7 +66,8 @@ function setMap(){
 
         southern = joinData(southern, csvData);
 
-
+////////////////////place dropdown here?
+		createDropdown(csvData);
         var colorScale = makeColorScale(csvData);
 
         setEnumerationUnits(southern, map, path, colorScale);
@@ -89,7 +106,7 @@ function joinData(southern, csvData){
 
             var geojsonProps = southern[a].properties; //the current region geojson properties
             var geojsonKey = geojsonProps.name; //the geojson primary key
-            console.log(southern);
+           
             //transfer csv data to geojson
             if (geojsonKey == csvKey){
 
@@ -238,14 +255,18 @@ var chartTitle = chart.append("text")
   
   
   
-  
+ 
   //function to create a dropdown menu for attribute selection
-function createDropdown(){
+function createDropdown(csvData){
     //add select element
-    var dropdown = d3.select("body")
+      var dropdown = d3.select("body")
         .append("select")
-        .attr("class", "dropdown");
-
+        .attr("class", "dropdown")
+        .on("change", function(){
+            changeAttribute(this.value, csvData)
+        });
+		
+		
     //add initial option
     var titleOption = dropdown.append("option")
         .attr("class", "titleOption")
@@ -258,11 +279,53 @@ function createDropdown(){
         .enter()
         .append("option")
         .attr("value", function(d){ return d })
-        .text(function(d){ return d });
+        .text(function(d){ return d })
+	 .on("change", function(){
+            changeAttribute(this.value, csvData)
+        });
 };//end of createDropdown
   
-  
-  
+  function changeAttribute(attribute, csvData){
+    //change the expressed attribute
+    expressed = attribute;
+
+    //recreate the color scale
+    var colorScale = makeColorScale(csvData);
+
+    //recolor enumeration units
+    var regions = d3.selectAll(".regions")
+        .style("fill", function(d){
+            return choropleth(d.properties, colorScale)
+        });
+		
+		
+		  //re-sort, resize, and recolor bars
+    var bars = d3.selectAll(".bar")
+        //re-sort bars
+        .sort(function(a, b){
+            return b[expressed] - a[expressed];
+        })
+        .attr("x", function(d, i){
+            return i * (chartInnerWidth / csvData.length) + leftPadding;
+        })
+        //resize bars
+        .attr("height", function(d, i){
+            return 463 - yScale(parseFloat(d[expressed]));
+        })
+        .attr("y", function(d, i){
+            return yScale(parseFloat(d[expressed])) + topBottomPadding;
+        })
+        //recolor bars
+        .style("fill", function(d){
+            return choropleth(d, colorScale);
+        });
+		
+		
+		
+		
+		
+		
+  }; //end of changeAttribute
   
   
   
