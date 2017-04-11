@@ -242,9 +242,9 @@ var numbers = chart.selectAll(".numbers")
                    })
                    .text(function(d){
                        return d[expressed];
-                   });
-var titleArray = ["Percent of people living under the poverty line", "Percent of people who are unemployed", "Percent of people that have graduated high school",
- "Percent of people who have completed a form of higher education", "Percent of people who stuggle with food insecurity"];//list of attributes
+                   }); 
+var titleArray = ["Percent of people living under the poverty line", "Percent of people who are unemployed", "Percent of people that haven't graduated high school",
+ "Percent of people who haven't completed a form of higher education", "Percent of people who stuggle with food insecurity"];//list of attributes
 var chartTitle = chart.append("text")
                         .attr("x", 20)
                         .attr("y", 40)
