@@ -1,18 +1,20 @@
 .map {
-	border: medium solid #999;
+	border: 3px solid #999;
+	margin: 10px 0 0 20px;
 }
+
 .countries {
 	fill: #FFF;
 	stroke: #CCC;
 	stroke-width: 2px;
 }
-/*If I change color here the entire map will be that color*/
-.regions{
-	fill: none;
-	stroke: black;
+
+.regions {
+	stroke: #000;
+	stroke-width: 0.5px;
+	stroke-linecap: round;
 }
 
-/*turning this black turns oceans black*/
 .gratBackground {
 	fill: #D5E3FF;
 }
@@ -21,4 +23,43 @@
 	fill: none;
 	stroke: #999;
 	stroke-width: 1px;
+}
+
+.chart {
+    float: right;
+    margin: 7px 20px 0 0;
+}
+
+.chartTitle {
+    font-family: sans-serif;
+    font-size: 1.5em;
+    font-weight: bold;
+}
+.chartBackground {
+    fill: rgba(128,128,128,.2);
+}
+.chartFrame {
+    fill: none;
+    stroke: #999;
+    stroke-width: 3px;
+    shape-rendering: crispEdges;
+}
+
+.numbers {
+    fill: white;
+    font-family: sans-serif;
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #999;
+    stroke-width: 1px;
+    shape-rendering: crispEdges;
+}
+
+.axis text {
+    font-family: sans-serif;
+    font-size: 0.8em;
+    fill: #999;
 }

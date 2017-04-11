@@ -1,77 +1,236 @@
-window.onload = setMap();
-function setMap(){
-	
-	//map frame dimensions
-	var width = 960,
-		height = 460;
+//Matthew Smith
+(function() {
 
-	//create new svg container for the map
-	var map = d3.select("body")
-		.append("svg")
-		.attr("class", "map")
-		.attr("width", width)
-		.attr("height", height);
+        //pseudo-global variables
+        var attrArray = ["povline", "Unemployment", "HighGraduation", "HigherEdAttain", "FoodInsecurity"]; //list of attributes
+        var expressed = attrArray[0]; //initial attribute
 
-	//create Albers equal area conic projection centered on France
-	var projection = d3.geoAlbers()
-		.center([-100, 46.2])
-		.rotate([-2, 0])
-		.parallels([43, 62])
-		.scale(500)
-		.translate([width / 2, height / 2]);
+        window.onload = setMap();
 
-	var path = d3.geoPath()
-		.projection(projection);
+        //set up map
+        function setMap() {
 
-	//use d3.queue to parallelize asynchronous data loading
-	d3.queue()
-		/*.defer(d3.csv, "data/unitsData.csv") //load attributes from csv
-		.defer(d3.json, "data/EuropeCountries.topojson") //load background spatial data
-		.defer(d3.json, "data/FranceRegions.topojson") //load choropleth spatial data
-		*/
-		.defer(d3.csv, "data/d3_povertydata.csv") 
-		.defer(d3.json, "data/ne_10m_admin_0_countries.topojson") 
-		.defer(d3.json, "data/ne_10m_admin_1_states_provinces_lakes.topojson")
-		
-		.await(callback);
-		
-	
+            //map frame dimensions
+            var width = window.innerWidth * 0.5,
+                height = 460;
 
-function callback(error, csvData, country, states){
-	
-	 var graticule = d3.geoGraticule()
-            .step([5, 5]); //place graticule lines every 5 degrees of longitude and latitude
 
-        //create graticule lines
-    var gratLines = map.selectAll(".gratLines") //select graticule elements that will be created
-            .data(graticule.lines()) //bind graticule lines to each element to be created
-            .enter() //create an element for each datum
-            .append("path") //append each element to the svg as a path element
-            .attr("class", "gratLines") //assign class for styling
-            .attr("d", path); //project graticule lines
-	 var gratLines = map.selectAll(".gratLines") //select graticule elements that will be created
-	
-	
-	var usa = topojson.feature(country, country.objects.ne_10m_admin_0_countries),
-		 southern = topojson.feature(states, states.objects.ne_10m_admin_1_states_provinces_lakes).features
-			console.log(usa);
-			
-	
-        //add Europe countries to map
-        var countries = map.append("path")
-            .datum(usa)
-            .attr("class", "countries")
-            .attr("d", path);
-			console.log(southern);
+            var map = d3.select("body")
+                .append("svg")
+                .attr("class", "map")
+                .attr("width", width)
+                .attr("height", height);
 
-        //add France regions to map
-        var regions = map.selectAll(".regions")
-            .data(southern)
-            .enter()
-            .append("path")
-            .attr("class", function(d){
-                return "regions " + d.properties.adm1_code;
-            })
-            .attr("d", path);
-    };
-};
+
+            var projection = d3.geoConicEqualArea()
+                .center([0, 40])
+                .rotate([98, 0])
+                .parallels([43, 62])
+                .scale(900)
+                .translate([width / 2, height / 2]);
+
+            var path = d3.geoPath()
+                .projection(projection);
+
+
+            d3.queue()
+                .defer(d3.csv, "data/d3_povertydata5.csv")
+                .defer(d3.json, "data/theStates.geojson") //failed to get a topojson to work correctly
+
+                .await(callback);
+
+            function callback(error, csvData, states) {
+                //place graticule on the map
+                setGraticule(map, path);
+
+
+                var southern = states.features;
+                //var southern = topojson.feature(states, states.objects.south).features;
+
+                southern = joinData(southern, csvData);
+
+
+                var colorScale = makeColorScale(csvData);
+
+                setEnumerationUnits(southern, map, path, colorScale);
+
+                setChart(csvData, colorScale);
+            };
+        };
+
+        function setGraticule(map, path) {
+
+            var graticule = d3.geoGraticule()
+                .step([5, 5]); //place graticule line every 5 degrees
+            //create graticule background
+            var gratBackground = map.append("path")
+                .datum(graticule.outline())
+                .attr("class", "gratBackground") //class and gratBackground
+                .attr("d", path) //project
+
+            //create graticule lines
+            var gratLines = map.selectAll(".gratLines")
+                .data(graticule.lines())
+                .enter()
+                .append("path")
+                .attr("class", "gratLines")
+                .attr("d", path);
+
+            function joinData(southern, csvData) {
+                //loop through csv
+                for (var i = 0; i < csvData.length; i++) {
+                    var csvRegion = csvData[i]; //the current region
+                    var csvKey = csvRegion.name; //the CSV primary key
+
+                    //loops through json
+                    for (var a = 0; a < southern.length; a++) {
+
+                        var geojsonProps = southern[a].properties; //the current region geojson properties
+                        var geojsonKey = geojsonProps.name; //the geojson primary key
+                        console.log(southern);
+                        //transfer csv data to geojson
+                        if (geojsonKey == csvKey) {
+
+                            //assign all attributes and values
+                            attrArray.forEach(function(attr) {
+                                var val = parseFloat(csvRegion[attr]); //get csv attribute value
+                                geojsonProps[attr] = val; //assign attribute and value to geojson prop
+                            });
+                        };
+                    };
+                };
+
+                return southern;
+            };
+
+            function setEnumerationUnits(southern, map, path, colorScale) {
+
+                var regions = map.selectAll(".regions")
+                    .data(southern)
+                    .enter()
+                    .append("path")
+                    .attr("class", function(d) {
+                        return "regions " + d.properties.name;
+                    })
+                    .attr("d", path)
+                    .style("fill", function(d) {
+                        return choropleth(d.properties, colorScale); //return choropleth
+                    });
+            };
+
+            //function to create color scale generator
+            function makeColorScale(data) {
+                var colorClasses = [
+                    "#D4B9DA",
+                    "#C994C7",
+                    "#DF65B0",
+                    "#DD1C77",
+                    "#980043"
+                ];
+
+                //create color scale generator
+                /////////////////////////////////////////Quantile or Threashold?
+                var colorScale = d3.scaleQuantile()
+                    .range(colorClasses);
+
+                //build array of all values of the expressed attribute
+                var domainArray = [];
+                for (var i = 0; i < data.length; i++) {
+                    var val = parseFloat(data[i][expressed]);
+                    domainArray.push(val);
+                };
+
+                //assign array of expressed values as scale domain
+                colorScale.domain(domainArray);
+
+                return colorScale;
+            };
+
+            function choropleth(props, colorScale) {
+
+                var val = parseFloat(props[expressed]);
+
+                if (typeof val == 'number' && !isNaN(val)) {
+                    return colorScale(val);
+                } else {
+                    return "#636363";
+                };
+            };
+
+            function setChart(csvData, colorScale) {
+                //chart frame
+                var chartWidth = window.innerWidth * 0.425,
+                    chartHeight = 460;
+
+                var chart = d3.select("body") //chart dimensions
+                    .append("svg")
+                    .attr("width", chartWidth)
+                    .attr("height", chartHeight)
+                    .attr("class", "chart");
+                //var y scale above var bars?
+                var yScale = d3.scaleLinear()
+                    .range([0, chartHeight])
+                    .domain([0, 105]);
+
+                //set bars for each province
+                var bars = chart.selectAll(".bars") //creates barchart
+                    .data(csvData)
+                    .enter()
+                    .append("rect")
+
+                    .sort(function(a, b) { //sort
+                        return a[expressed] - b[expressed]
+                    })
+                    .attr("class", function(d) {
+                        return "bars " + d.name;
+                    })
+
+                    .attr("class", function(d) {
+                        return "bars " + d.name;
+                    })
+                    .attr("width", chartWidth / csvData.length - 1)
+                    .attr("x", function(d, i) {
+                        return i * (chartWidth / csvData.length);
+                    })
+                    .attr("height", function(d) {
+                        return yScale(parseFloat(d[expressed]));
+                    })
+                    .attr("y", function(d) {
+                        return chartHeight - yScale(parseFloat(d[expressed]));
+                    })
+                    .style("fill", function(d) {
+                        return choropleth(d, colorScale);
+                    });
+
+                var numbers = chart.selectAll(".numbers")
+                    .data(csvData)
+                    .enter()
+                    .append("text")
+                    .sort(function(a, b) {
+                        return a[expressed] - b[expressed]
+                    })
+                    .attr("class", function(d) {
+                        return "numbers " + d.name;
+                    })
+                    .attr("text-anchor", "middle")
+                    .attr("x", function(d, i) {
+                        var fraction = chartWidth / csvData.length;
+                        return i * fraction + (fraction - 1) / 2;
+                    })
+                    .attr("y", function(d) {
+                        return chartHeight - yScale(parseFloat(d[expressed])) + 15;
+                    })
+                    .text(function(d) {
+                        return d[expressed];
+                    });
+                var titleArray = ["Percent of people living under the poverty line", "Percent of people who are unemployed", "Percent of people that have graduated high school",
+                    "Percent of people who have completed a form of higher education", "Percent of people who stuggle with food insecurity"
+                ]; //better way of getting graph titles
+                var chartTitle = chart.append("text")
+                    .attr("x", 20)
+                    .attr("y", 40)
+                    .attr("class", "chartTitle")
+                    .text(titleArray[3] + " by state");
+                //.text(expressed[3] + " by state");
+            }; //end of setchart
+        })();
