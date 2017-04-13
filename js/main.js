@@ -201,10 +201,10 @@ function setChart(csvData, colorScale){
         .enter()
         .append("rect")
         .sort(function(a, b){
-            return b[expressed]-a[expressed]
+            return a[expressed]-b[expressed]
         })
         .attr("class", function(d){
-            return "bar " + d.adm1_code;
+            return "bar " + d.name;
         })
         .attr("width", chartInnerWidth / csvData.length - 1)
         .on("mouseover", highlight);
@@ -244,7 +244,7 @@ var numbers = chart.selectAll(".numbers")
   
   //function to reset the element style on mouseout
 function dehighlight(props){
-    var selected = d3.selectAll("." + props.adm1_code)
+    var selected = d3.selectAll("." + props.name)
         .style("stroke", function(){
             return getStyle(this, "stroke")
         })
@@ -312,7 +312,7 @@ function changeAttribute(attribute, csvData){
 		var bars = d3.selectAll(".bar")
         //re-sort bars
         .sort(function(a, b){
-            return b[expressed] - a[expressed];
+            return a[expressed] - b[expressed];
         })
  .transition() //animation
         .delay(function(d, i){
